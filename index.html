@@ -291,8 +291,11 @@ const goldenRules = [
 ];
 
 /* ---------------- RETAKE WINDOW ---------------- */
-const RETAKE_WINDOW_START = new Date(2026,7,15,17,0,0); // Sat Aug 15, 2026, 5:00 PM local
-const RETAKE_WINDOW_END   = new Date(2026,7,16,17,0,0); // Sun Aug 16, 2026, 5:00 PM local
+// Authoritative window as stated by the Berribot platform: 2026-08-14T09:00:00Z - 2026-08-16T17:00:00Z
+// = Fri Aug 14, 2:00 AM PDT  ->  Sun Aug 16, 10:00 AM PDT. Parsed as absolute UTC instants so the
+// countdown is correct regardless of the viewer's local timezone.
+const RETAKE_WINDOW_START = new Date("2026-08-14T09:00:00Z");
+const RETAKE_WINDOW_END   = new Date("2026-08-16T17:00:00Z");
 function fmtCountdown(ms){
   if(ms<=0) return '0h 0m';
   const totalMin = Math.floor(ms/60000);
@@ -300,31 +303,52 @@ function fmtCountdown(ms){
 }
 function retakeStatus(){
   const now = new Date();
-  if(now < RETAKE_WINDOW_START) return {phase:'before', headline:`Retake window opens in ${fmtCountdown(RETAKE_WINDOW_START-now)}`, detail:'Bookable slot: Sat Aug 15, 5:00 PM – Sun Aug 16, 5:00 PM. That\'s your prep runway.'};
-  if(now <= RETAKE_WINDOW_END) return {phase:'open', headline:`Window is OPEN — closes in ${fmtCountdown(RETAKE_WINDOW_END-now)}`, detail:'If you haven\'t scheduled your slot yet, do that now.'};
+  if(now < RETAKE_WINDOW_START) return {phase:'before', headline:`Retake window opens in ${fmtCountdown(RETAKE_WINDOW_START-now)}`, detail:'Window: Fri Aug 14, 2:00 AM PDT – Sun Aug 16, 10:00 AM PDT (09:00–17:00 UTC). That\'s your prep runway.'};
+  if(now <= RETAKE_WINDOW_END) return {phase:'open', headline:`Window is OPEN — closes in ${fmtCountdown(RETAKE_WINDOW_END-now)}`, detail:'Deadline: Sun Aug 16, 10:00 AM PDT (17:00 UTC). Schedule your slot now if you haven\'t.'};
   return {phase:'after', headline:'Retake window has closed', detail:''};
 }
 
 const sprintPlan = [
-  {label:'Today — before you stop for the night', items:[
+  {label:'Right now / today (Fri)', items:[
     {id:'rules', text:'Read all 6 Golden Rules once, out loud', view:'rules'},
+    {id:'primer', text:'JS Syntax Primer — start here if the drills look unfamiliar', view:'coding', tab:'primer'},
     {id:'drills', text:'Coding Lab → all 8 warm-up drills', view:'coding', tab:'drills'},
     {id:'p1', text:'Solve the array-filter problem (Problem 1) from scratch, no hints', view:'coding', tab:'real'},
     {id:'p2', text:'Solve the 3Sum problem (Problem 2) from scratch, no hints', view:'coding', tab:'real'},
     {id:'q5q12', text:'Practice Q5 and Q12 — the two you never got to answer live', view:'practice', qid:5},
     {id:'q4q10', text:'Practice Q4 and Q10 — your weakest scored answers', view:'practice', qid:4}
   ]},
-  {label:'Tomorrow — before 5 PM', items:[
+  {label:'Tomorrow (Sat) — your one full free day', items:[
     {id:'restq', text:'Practice the remaining 10 Q&A questions', view:'practice'},
     {id:'mock1', text:'One full 30-minute Timed Mock, start to finish, no pausing', view:'mock'},
     {id:'rules2', text:'Re-read the Golden Rules once more', view:'rules'},
     {id:'redo', text:'Re-solve both coding problems from memory — aim under 5 min each', view:'coding', tab:'real'}
   ]},
-  {label:'In the last 15 minutes before your call', items:[
+  {label:'Sunday morning, before the window closes at 10 AM PDT', items:[
     {id:'debrief2', text:'Skim the "three fixes that matter most" on the Debrief page', view:'debrief'},
     {id:'rule1', text:'Say rule #1 to yourself: never ask for clarification — state your read and answer', view:'rules'},
     {id:'rule2', text:'Say rule #2 to yourself: never skip coding — brute force beats silence', view:'rules'}
   ]}
+];
+
+/* ---------------- SYNTAX PRIMER (JS, mapped from Java/Dart memory) ---------------- */
+const syntaxPrimer = [
+  {title:'Variables', js:'let x = 5;\nconst name = "Armando";\nx = 6;        // ok, let can change\n// name = "x"; // error, const cannot',
+   note:"No type keywords like Java's int/String or Dart's typed vars. `let` = reassignable, `const` = can't be reassigned. Default to `const`; switch to `let` only when the value needs to change."},
+  {title:'Equality & comparison', js:'5 === 5     // true\n5 === "5"   // false — no type coercion\n5 == "5"    // true — coerces types, AVOID\n5 !== 6     // true\n5 <= 6      // true',
+   note:"Always use === and !==, never == or !=. Everything else (<, >, <=, >=, %) works exactly like Java/Dart."},
+  {title:'If / else', js:'if (n % 2 === 0) {\n  return true;\n} else {\n  return false;\n}',
+   note:"Structurally identical to Java/Dart if/else. % is modulo, same meaning as Java."},
+  {title:'Loops', js:'for (let i = 0; i < nums.length; i++) {\n  // classic index loop\n}\n\nfor (const n of nums) {\n  // for-each, like Dart\'s "for (var n in nums)"\n}\n\nwhile (left < right) {\n  // same as Java/Dart while\n}',
+   note:"nums.length is a property (no parentheses) — unlike Java's list.size() or a String's .length(). for...of is JS's for-each loop."},
+  {title:'Functions', js:'function findMax(nums) {\n  return Math.max(...nums);\n}\n\n// same thing, arrow-function shorthand:\nconst findMax = (nums) => {\n  return Math.max(...nums);\n};',
+   note:"No return type or parameter types to declare — that's the biggest visual difference from Java. Both forms above do the same thing; use whichever reads clearer to you, both appear in this app."},
+  {title:'The => arrow shorthand', js:'n => n !== target\n// expands to:\nfunction(n) { return n !== target; }',
+   note:"Whenever you see =>, mentally expand it into a normal function with an implicit return. `nums.filter(n => n !== target)` reads as: for each n in nums, keep it if n is not target."},
+  {title:'Arrays', js:'const nums = [3, 7, 2];\nnums.length              // 3\nnums[0]                  // 3 — zero-indexed, same as Java/Dart\nnums.push(9)             // adds to the end\nnums.filter(n => n !== 2) // new array, keeps elements where the test is true',
+   note:".filter() alone is enough to solve Problem 1 in this app (the array-filter question): nums.filter(n => n !== target)."},
+  {title:'Sorting numbers (the gotcha)', js:'nums.sort();               // WRONG for numbers — sorts as text\nnums.sort((a, b) => a - b); // correct ascending numeric sort',
+   note:"This one is a real trap coming from Java/Dart, where sort() handles numbers correctly by default. In JS it doesn't — always pass (a,b) => a-b for ascending numbers. Needed for Problem 2 (3Sum)."}
 ];
 
 /* ---------------- CODING DRILLS ---------------- */
@@ -403,7 +427,7 @@ let state = {
   practice:{cat:'all', idx:0, order:[]},
   session:{answers:{}}, // qid -> {text, score, feedback}
   mock:{active:false, idx:0, seconds:1800, timerId:null, log:[]},
-  coding:{tab:'drills', drillIdx:0, probIdx:0, code:{}, results:{}, lastInput:Date.now(), nudgeTimerId:null},
+  coding:{tab:'primer', drillIdx:0, probIdx:0, code:{}, results:{}, lastInput:Date.now(), nudgeTimerId:null},
   drillDone: JSON.parse(localStorage.getItem(LS_DRILLS)||'{}'),
   sprint: JSON.parse(localStorage.getItem(LS_SPRINT)||'{}')
 };
@@ -480,7 +504,7 @@ function renderSprintPlan(){
     }).join('');
     return `<div class="card"><h3 style="font-size:1rem;">${esc(phase.label)}</h3>${items}</div>`;
   }).join('');
-  return `<h3 style="margin-top:26px;">Compressed prep sprint</h3><p class="sub" style="margin-bottom:14px;">Built around your actual window: Sat Aug 15, 5 PM – Sun Aug 16, 5 PM. Check items off as you go — it's saved automatically.</p>${blocks}`;
+  return `<h3 style="margin-top:26px;">Compressed prep sprint</h3><p class="sub" style="margin-bottom:14px;">Built around your actual window: open now, closes Sun Aug 16, 10:00 AM PDT. Check items off as you go — it's saved automatically.</p>${blocks}`;
 }
 function viewDebrief(){
   const strong = questionBank.filter(q=>q.perf.status==='strong').length;
@@ -596,11 +620,22 @@ function renderFeedback(q, res){
 
 function viewCoding(){
   const tabs = `<div class="tabs">
+    <button class="tab ${state.coding.tab==='primer'?'active':''}" onclick="setCodingTab('primer')">JS Syntax Primer</button>
     <button class="tab ${state.coding.tab==='drills'?'active':''}" onclick="setCodingTab('drills')">Warm-up Drills</button>
     <button class="tab ${state.coding.tab==='real'?'active':''}" onclick="setCodingTab('real')">The Two Real Problems</button>
   </div>`;
+  if(state.coding.tab==='primer') return `<div class="eyebrow">Coding Lab</div><h1>JS Syntax Primer</h1><p class="sub">Everything here is JavaScript. If Java or Dart/Flutter is the last language you touched, this maps what you already know onto JS syntax — start here before the drills.</p>${tabs}${renderPrimer()}`;
   if(state.coding.tab==='drills') return `<div class="eyebrow">Coding Lab</div><h1>Warm-up Drills</h1><p class="sub">Syntax, operators, function outputs, arrays, and linear search — the fundamentals underneath both real interview problems.</p>${tabs}${renderDrill()}`;
   return `<div class="eyebrow">Coding Lab</div><h1>The Two Real Problems</h1><p class="sub">Verbatim from your Berribot technical assessment. Both went unanswered live — this is where that gets fixed.</p>${tabs}${renderProblem()}`;
+}
+
+function renderPrimer(){
+  return syntaxPrimer.map(c=>`
+    <div class="card">
+      <h3 style="font-size:1rem;">${esc(c.title)}</h3>
+      <pre class="code-block">${esc(c.js)}</pre>
+      <p style="font-size:.86rem;color:var(--ink-dim);margin:8px 0 0;">${esc(c.note)}</p>
+    </div>`).join('');
 }
 
 function renderDrill(){
