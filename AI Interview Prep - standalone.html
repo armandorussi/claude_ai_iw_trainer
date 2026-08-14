@@ -425,12 +425,17 @@ const LS_SPRINT = 'aiprepv2_sprint';
 let state = {
   view:'debrief',
   practice:{cat:'all', idx:0, order:[]},
-  session:{answers:{}}, // qid -> {text, score, feedback}
+  session:{answers:{}}, // qid -> {text, score, feedback, elapsedSec}
   mock:{active:false, idx:0, seconds:1800, timerId:null, log:[]},
   coding:{tab:'primer', drillIdx:0, probIdx:0, code:{}, results:{}, lastInput:Date.now(), nudgeTimerId:null},
   drillDone: JSON.parse(localStorage.getItem(LS_DRILLS)||'{}'),
-  sprint: JSON.parse(localStorage.getItem(LS_SPRINT)||'{}')
+  sprint: JSON.parse(localStorage.getItem(LS_SPRINT)||'{}'),
+  speech:{
+    supported: (typeof window!=='undefined') && !!(window.SpeechRecognition||window.webkitSpeechRecognition),
+    listening:false, duration:150, remaining:150, timerId:null, baseText:'', interim:'', elapsedSec:0, permissionError:null
+  }
 };
+let recognitionInstance = null;
 
 function loadHistory(){ try{return JSON.parse(localStorage.getItem(LS_KEY)||'[]');}catch(e){return [];} }
 function saveHistoryEntry(entry){ const h=loadHistory(); h.unshift(entry); localStorage.setItem(LS_KEY, JSON.stringify(h)); }
@@ -474,6 +479,82 @@ function runUserFn(entryName, code, argsList){
     try{ return {value: fn(...args)}; }
     catch(e){ return {error:e.message}; }
   });
+}
+
+/* ---------------- SPEECH ENGINE (mic only — no camera, no video stream) ---------------- */
+function fmtMMSS(sec){ sec=Math.max(0,sec); const m=Math.floor(sec/60), s=sec%60; return `${m}:${String(s).padStart(2,'0')}`; }
+function ensureRecognition(){
+  if(recognitionInstance) return recognitionInstance;
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if(!SR) return null;
+  const r = new SR();
+  r.continuous = true;
+  r.interimResults = true;
+  r.lang = 'en-US';
+  r.onresult = (e)=>{
+    let finalChunk='', interimChunk='';
+    for(let i=e.resultIndex;i<e.results.length;i++){
+      const res=e.results[i];
+      if(res.isFinal) finalChunk += res[0].transcript + ' ';
+      else interimChunk += res[0].transcript;
+    }
+    if(finalChunk) state.speech.baseText += finalChunk;
+    state.speech.interim = interimChunk;
+    syncAnswerBox();
+  };
+  r.onerror = (e)=>{
+    state.speech.permissionError = e.error || 'unknown error';
+    stopSpeaking();
+  };
+  r.onend = ()=>{
+    if(state.speech.listening){
+      try{ r.start(); }catch(err){ state.speech.listening=false; render(); }
+    }
+  };
+  recognitionInstance = r;
+  return r;
+}
+function syncAnswerBox(){
+  const box = document.getElementById('answerBox');
+  if(box){ box.value = (state.speech.baseText + state.speech.interim).trim(); }
+}
+function setSpeechDuration(sec){ state.speech.duration = Number(sec); if(!state.speech.listening) state.speech.remaining = Number(sec); render(); }
+function startSpeaking(){
+  const r = ensureRecognition();
+  if(!r){ state.speech.permissionError = 'not-supported'; render(); return; }
+  state.speech.permissionError = null;
+  state.speech.baseText = (document.getElementById('answerBox')?.value || '');
+  if(state.speech.baseText && !/\s$/.test(state.speech.baseText)) state.speech.baseText += ' ';
+  state.speech.interim = '';
+  state.speech.remaining = state.speech.duration;
+  state.speech.listening = true;
+  state.speech.startedAt = Date.now();
+  try{ r.start(); }catch(e){ /* already running */ }
+  state.speech.timerId = setInterval(()=>{
+    state.speech.remaining--;
+    if(state.speech.remaining<=0){ stopSpeaking(); return; }
+    const t=document.getElementById('speechTimer'); if(t) t.textContent = fmtMMSS(state.speech.remaining);
+  },1000);
+  render();
+}
+function stopSpeaking(){
+  if(!state.speech.listening && !state.speech.timerId) return;
+  state.speech.listening=false;
+  state.speech.elapsedSec = Math.round((Date.now()-(state.speech.startedAt||Date.now()))/1000);
+  if(state.speech.timerId) clearInterval(state.speech.timerId);
+  state.speech.timerId=null;
+  if(recognitionInstance){ try{ recognitionInstance.stop(); }catch(e){} }
+  render();
+}
+function resetSpeech(){
+  if(state.speech.listening) stopSpeaking();
+  state.speech.remaining = state.speech.duration;
+  state.speech.baseText=''; state.speech.interim=''; state.speech.elapsedSec=0; state.speech.permissionError=null;
+}
+function paceLabel(wpm){
+  if(wpm<90) return 'slow — you have room to pick up the pace';
+  if(wpm>175) return 'fast — might be rushing, make sure every word still lands';
+  return 'good conversational pace';
 }
 
 /* ---------------- RENDER HELPERS ---------------- */
@@ -569,6 +650,33 @@ function viewRules(){
   </div>`;
 }
 
+function renderSpeechPanel(){
+  const sp = state.speech;
+  if(!sp.supported){
+    return `<div class="rulebox" style="border-left-color:var(--accent);">
+      <b>Voice input isn't supported in this browser.</b> Speech recognition needs Chrome (desktop or Android). Type your answer below instead — everything else about the timer and scoring still applies if you time yourself with a phone.
+    </div>`;
+  }
+  const durations = [90,120,150,180];
+  const durChips = durations.map(d=>`<button class="fchip ${sp.duration===d?'active':''}" onclick="setSpeechDuration(${d})" ${sp.listening?'disabled':''}>${fmtMMSS(d)}</button>`).join('');
+  const timerColor = sp.remaining<=15 ? 'var(--critical)' : 'var(--ink)';
+  return `
+  <div class="card" style="background:var(--surface-2);">
+    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;">
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+        <span style="font-size:.8rem;color:var(--ink-dim);">Time limit:</span>${durChips}
+      </div>
+      <span id="speechTimer" class="timer" style="color:${timerColor};">${fmtMMSS(sp.listening?sp.remaining:sp.duration)}</span>
+    </div>
+    <div style="display:flex;gap:10px;margin-top:12px;align-items:center;flex-wrap:wrap;">
+      ${sp.listening
+        ? `<button class="btn" style="background:var(--critical);" onclick="stopSpeaking()">● Stop &amp; review</button><span style="font-size:.82rem;color:var(--ink-dim);">Listening — speak your answer now.</span>`
+        : `<button class="btn" onclick="startSpeaking()">🎤 Start speaking</button><span style="font-size:.82rem;color:var(--ink-dim);">Mic permission is requested only when you click this.</span>`}
+    </div>
+    ${sp.permissionError ? `<div class="rulebox" style="border-left-color:var(--critical);margin-top:12px;"><b>Mic error:</b> ${esc(sp.permissionError)}. ${sp.permissionError==='not-allowed'?"Check the address bar for a blocked-mic icon, or your browser's site permissions.":''} You can still type your answer below.</div>` : ''}
+  </div>`;
+}
+
 function viewPractice(){
   const cats = ['all',...Object.keys(categoryMeta)];
   const list = questionBank.filter(q=> state.practice.cat==='all' || q.cat===state.practice.cat);
@@ -593,7 +701,9 @@ function viewPractice(){
       <div style="font-size:.8rem;color:var(--ink-dim);margin-bottom:6px;">A strong answer covers:</div>
       ${q.keyPoints.map(kp=>`<div class="kpoint ${saved && saved.hits && saved.hits.find(h=>h.k===kp.k && h.hit) ? 'hit':''}">• ${esc(kp.k)}</div>`).join('')}
     </div>
-    <textarea id="answerBox" rows="7" placeholder="Type or paste your answer here...">${saved?esc(saved.text):''}</textarea>
+    ${renderSpeechPanel()}
+    <div style="font-size:.8rem;color:var(--ink-dim);margin:12px 0 6px;">Transcript (auto-filled while speaking, editable):</div>
+    <textarea id="answerBox" rows="7" placeholder="Click Start speaking above, or type here directly..." oninput="state.speech.baseText=this.value">${saved?esc(saved.text):esc(state.speech.baseText||'')}</textarea>
     <div style="display:flex;gap:10px;margin-top:10px;flex-wrap:wrap;">
       <button class="btn" onclick="submitAnswer(${q.id})">Submit for feedback</button>
       <button class="btn ghost" onclick="prevQuestion()" ${idxInList<=0?'disabled':''}>← Prev</button>
@@ -606,6 +716,7 @@ function viewPractice(){
 function renderFeedback(q, res){
   const pct = Math.round(res.score*10);
   const color = res.score>=7?'var(--good)':res.score>=4.5?'var(--accent)':'var(--critical)';
+  const wpm = res.elapsedSec ? Math.round(res.wordCount/(res.elapsedSec/60)) : null;
   return `
   <hr class="sep">
   <div class="scorewrap"><span class="big" style="color:${color}">${res.score}</span><span style="color:var(--ink-dim);">/ 10</span></div>
@@ -613,7 +724,7 @@ function renderFeedback(q, res){
   <div style="margin:12px 0;">
     ${res.hits.map(h=>`<div class="kpoint ${h.hit?'hit':''}">${h.hit?'✓':'✗'} ${esc(h.k)}</div>`).join('')}
   </div>
-  <p style="font-size:.85rem;color:var(--ink-dim);">${res.wordCount} words · ${res.fillerHits} filler word${res.fillerHits===1?'':'s'} detected</p>
+  <p style="font-size:.85rem;color:var(--ink-dim);">${res.wordCount} words · ${res.fillerHits} filler word${res.fillerHits===1?'':'s'} detected${wpm?` · ${wpm} WPM (${paceLabel(wpm)})`:' · typed, no pace data — use Speak mode for pace feedback'}</p>
   <button class="btn ghost sm" onclick="toggleModel(${q.id})">Show model answer</button>
   <div id="model-${q.id}" style="display:none;margin-top:10px;"><p style="font-size:.9rem;">${esc(q.model)}</p></div>`;
 }
@@ -738,8 +849,8 @@ function viewHistory(){
 }
 
 /* ---------------- ACTIONS ---------------- */
-function setView(v){ state.view=v; render(); window.scrollTo(0,0); }
-function gotoQuestion(id){ const idx = questionBank.findIndex(q=>q.id===id); const q=questionBank[idx]; state.practice.cat='all'; state.practice.idx=idx; setView('practice'); }
+function setView(v){ if(state.speech.listening) stopSpeaking(); state.view=v; render(); window.scrollTo(0,0); }
+function gotoQuestion(id){ resetSpeech(); const idx = questionBank.findIndex(q=>q.id===id); const q=questionBank[idx]; state.practice.cat='all'; state.practice.idx=idx; setView('practice'); }
 function toggleSprint(id){ state.sprint[id] = !state.sprint[id]; localStorage.setItem(LS_SPRINT, JSON.stringify(state.sprint)); render(); }
 function goSprintItem(id){
   const item = sprintPlan.flatMap(p=>p.items).find(i=>i.id===id);
@@ -748,14 +859,16 @@ function goSprintItem(id){
   if(item.view==='coding' && item.tab) state.coding.tab = item.tab;
   setView(item.view);
 }
-function setPracticeCat(c){ state.practice.cat=c; state.practice.idx=0; render(); }
-function nextQuestion(){ state.practice.idx++; render(); }
-function prevQuestion(){ state.practice.idx--; render(); }
+function setPracticeCat(c){ resetSpeech(); state.practice.cat=c; state.practice.idx=0; render(); }
+function nextQuestion(){ resetSpeech(); state.practice.idx++; render(); }
+function prevQuestion(){ resetSpeech(); state.practice.idx--; render(); }
 function submitAnswer(qid){
   const q = questionBank.find(x=>x.id===qid);
   const text = document.getElementById('answerBox').value;
   const res = scoreAnswer(q, text);
-  state.session.answers[qid] = {text, ...res};
+  const elapsedSec = state.speech.elapsedSec || 0;
+  state.session.answers[qid] = {text, ...res, elapsedSec};
+  resetSpeech();
   render();
 }
 function toggleModel(qid){ const el=document.getElementById('model-'+qid); el.style.display = el.style.display==='none'?'block':'none'; }
