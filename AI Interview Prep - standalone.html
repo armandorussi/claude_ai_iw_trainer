@@ -312,7 +312,7 @@ const sprintPlan = [
   {label:'Right now / today (Fri)', items:[
     {id:'rules', text:'Read all 6 Golden Rules once, out loud', view:'rules'},
     {id:'primer', text:'JS Syntax Primer — start here if the drills look unfamiliar', view:'coding', tab:'primer'},
-    {id:'pyprimer', text:'Python Syntax Primer — Berribot reportedly uses Python often, review this too', view:'coding', tab:'pyprimer'},
+    {id:'pyprimer', text:'Python Syntax Primer — optional second reference, no language was actually required last time', view:'coding', tab:'pyprimer'},
     {id:'drills', text:'Coding Lab → all 8 warm-up drills', view:'coding', tab:'drills'},
     {id:'p1', text:'Solve the array-filter problem (Problem 1) from scratch, no hints', view:'coding', tab:'real'},
     {id:'p2', text:'Solve the 3Sum problem (Problem 2) from scratch, no hints', view:'coding', tab:'real'},
@@ -762,9 +762,9 @@ function viewCoding(){
     <button class="tab ${state.coding.tab==='real'?'active':''}" onclick="setCodingTab('real')">The Two Real Problems</button>
   </div>`;
   if(state.coding.tab==='primer') return `<div class="eyebrow">Coding Lab</div><h1>JS Syntax Primer</h1><p class="sub">The warm-up drills below run in JavaScript. If Java or Dart/Flutter is the last language you touched, this maps what you already know onto JS syntax — start here before the drills.</p>${tabs}${renderPrimer(syntaxPrimer)}`;
-  if(state.coding.tab==='pyprimer') return `<div class="eyebrow">Coding Lab</div><h1>Python Syntax Primer</h1><p class="sub">Reports on Berribot's actual coding environment describe Python as a common language for its questions — possibly more likely than JS. The drills below only run in JS, but this primer plus the Python reference solutions on the real problems let you rehearse the same logic in Python.</p>${tabs}${renderPrimer(pythonPrimer)}`;
+  if(state.coding.tab==='pyprimer') return `<div class="eyebrow">Coding Lab</div><h1>Python Syntax Primer</h1><p class="sub">Your actual transcript never named a language or showed a code editor — this is optional extra scaffolding, not a signal Python is required. General reports about Berribot's platform mention Python often, but those are mostly from engineering-role candidates with a visible code editor, which your own transcript doesn't show. Use whichever primer (JS or this one) helps you think most clearly.</p>${tabs}${renderPrimer(pythonPrimer)}`;
   if(state.coding.tab==='drills') return `<div class="eyebrow">Coding Lab</div><h1>Warm-up Drills</h1><p class="sub">Syntax, operators, function outputs, arrays, and linear search — the fundamentals underneath both real interview problems.</p>${tabs}${renderDrill()}`;
-  return `<div class="eyebrow">Coding Lab</div><h1>The Two Real Problems</h1><p class="sub">Verbatim from your Berribot technical assessment. Both went unanswered live — this is where that gets fixed.</p>${tabs}${renderProblem()}`;
+  return `<div class="eyebrow">Coding Lab</div><h1>The Two Real Problems</h1><p class="sub">Verbatim from your Berribot technical assessment. Both went unanswered live — this is where that gets fixed. Your transcript never specified a language or showed a code editor — you're free to answer in plain English, pseudocode, or real code in whatever language you're most fluent in. JS/Python here are just scaffolding to help you nail the logic.</p>${tabs}${renderProblem()}`;
 }
 
 function renderPrimer(cards){
