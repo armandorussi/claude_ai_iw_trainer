@@ -453,7 +453,7 @@ let state = {
   practice:{cat:'all', idx:0, order:[]},
   session:{answers:{}}, // qid -> {text, score, feedback, elapsedSec}
   mock:{active:false, idx:0, seconds:1800, timerId:null, log:[]},
-  coding:{tab:'playground', drillIdx:0, probIdx:0, code:{}, results:{}, narrate:{}, lastInput:Date.now(), nudgeTimerId:null, playgroundCode:'2 + 3', playgroundOutput:null},
+  coding:{tab:'playground', drillIdx:0, probIdx:0, code:{}, results:{}, narrate:{}, lastInput:Date.now(), nudgeTimerId:null, playgroundCode:'let price = 12;\nlet quantity = 3;\nprice * quantity', playgroundOutput:null, playgroundChallenge:null, showSolution:false},
   drillDone: JSON.parse(localStorage.getItem(LS_DRILLS)||'{}'),
   sprint: JSON.parse(localStorage.getItem(LS_SPRINT)||'{}'),
   speech:{
@@ -498,13 +498,34 @@ function deepEqUnordered(a,b){
 function runPlayground(){
   const code = state.coding.playgroundCode || '';
   const logs = [];
-  const fakeConsole = { log: (...args)=> logs.push(args.map(a=> (typeof a==='object'&&a!==null) ? JSON.stringify(a) : String(a)).join(' ')) };
+  const fakeConsole = { log: (...args)=>{ logs.push(args.map(a=> (typeof a==='object'&&a!==null) ? JSON.stringify(a) : String(a)).join(' ')); } };
   let result, hasResult=false, error=null;
-  try{
-    const fn = new Function('console', `"use strict";\nreturn (\n${code}\n);`);
-    result = fn(fakeConsole);
-    hasResult = true;
-  }catch(e1){
+
+  // Find the last non-blank, non-comment-only line. If it looks like a bare
+  // expression (not a declaration/control-flow keyword), auto-wrap just that
+  // line in a return so simple REPL-style snippets show their value, the way
+  // a real console would — without needing an explicit console.log.
+  const lines = code.split('\n');
+  let lastIdx = -1;
+  for(let i=lines.length-1;i>=0;i--){
+    const t = lines[i].trim();
+    if(t && !t.startsWith('//')){ lastIdx = i; break; }
+  }
+  if(lastIdx>=0){
+    const commentAt = lines[lastIdx].indexOf('//');
+    const core = (commentAt>=0 ? lines[lastIdx].slice(0,commentAt) : lines[lastIdx]).trim().replace(/;\s*$/,'');
+    const isStatementish = /^(let|const|var|function|for|while|if|else|return|class|switch|try|catch|do|\}|\{)/.test(core) || core==='';
+    if(core && !isStatementish){
+      const before = lines.slice(0,lastIdx).join('\n');
+      try{
+        const fn = new Function('console', `"use strict";\n${before}\nreturn (\n${core}\n);`);
+        result = fn(fakeConsole);
+        hasResult = true;
+      }catch(e){ /* fall through to plain execution below */ }
+    }
+  }
+  if(!hasResult){
+    logs.length = 0;
     try{
       const fn2 = new Function('console', `"use strict";\n${code}\n`);
       fn2(fakeConsole);
@@ -794,18 +815,58 @@ function viewCoding(){
   return `<div class="eyebrow">Coding Lab</div><h1>The Two Real Problems</h1><p class="sub">Verbatim from your Berribot technical assessment. Both went unanswered live — this is where that gets fixed. Your transcript never specified a language or showed a code editor — you're free to answer in plain English, pseudocode, or real code in whatever language you're most fluent in. JS/Python here are just scaffolding to help you nail the logic.</p>${tabs}${renderProblem()}`;
 }
 
-const playgroundExamples = [
-  {label:'Add numbers', code:'2 + 3'},
-  {label:'Comparison', code:'5 % 2 === 1'},
-  {label:'Array index', code:'const nums = [3, 7, 2];\nnums[1]'},
-  {label:'Array length', code:'const nums = [3, 7, 2];\nnums.length'},
-  {label:'A loop, printed', code:'const nums = [3, 7, 2];\nfor (let i = 0; i < nums.length; i++) {\n  console.log(i, nums[i]);\n}'},
-  {label:'If / else', code:'const n = 7;\nif (n % 2 === 0) {\n  console.log("even");\n} else {\n  console.log("odd");\n}'}
+const operatorLessons = [
+  {category:'Arithmetic', ops:[['+','add'],['-','subtract'],['*','multiply'],['/','divide'],['%','remainder (modulo)'],['**','power']],
+   example:'let price = 12;\nlet quantity = 3;\nprice * quantity   // total cost',
+   challenge:{prompt:'price is 12, quantity is 3. Write an expression for the total cost, using *.', starter:'let price = 12;\nlet quantity = 3;\n// write your expression on the next line\n'},
+   solution:'let price = 12;\nlet quantity = 3;\nprice * quantity'},
+  {category:'Comparison', ops:[['===','equal to (always use this, not ==)'],['!==','not equal to'],['>','greater than'],['<','less than'],['>=','greater than or equal'],['<=','less than or equal']],
+   example:'let age = 20;\nage >= 18   // true if age is 18 or older',
+   challenge:{prompt:'age is 17. Write an expression that checks whether age is at least 18, using >=.', starter:'let age = 17;\n// write your expression on the next line\n'},
+   solution:'let age = 17;\nage >= 18'},
+  {category:'Logical', ops:[['&&','AND — true only if both sides are true'],['||','OR — true if either side is true'],['!','NOT — flips true to false and back']],
+   example:'let hasTicket = true;\nlet hasID = true;\nhasTicket && hasID   // true only if both are true',
+   challenge:{prompt:'hasTicket is true, hasID is false. Write an expression that\'s true only when BOTH are true, using &&.', starter:'let hasTicket = true;\nlet hasID = false;\n// write your expression on the next line\n'},
+   solution:'let hasTicket = true;\nlet hasID = false;\nhasTicket && hasID'},
+  {category:'Modulo (remainder)', ops:[['%','remainder after division — the key to even/odd checks']],
+   example:'let n = 7;\nn % 2   // 1 (a remainder) means n is odd',
+   challenge:{prompt:'n is 8. Write an expression that checks whether n is even, using % and ===.', starter:'let n = 8;\n// write your expression on the next line\n'},
+   solution:'let n = 8;\nn % 2 === 0'},
+  {category:'Assignment', ops:[['=','assign a value'],['+=','add, then reassign'],['-=','subtract, then reassign'],['*=','multiply, then reassign']],
+   example:'let score = 10;\nscore += 5;   // same as: score = score + 5\nconsole.log(score);',
+   challenge:{prompt:'score starts at 10. Add 5 to it using +=, then console.log(score) to see the new value.', starter:'let score = 10;\n// add 5 to score using +=, then console.log(score)\n'},
+   solution:'let score = 10;\nscore += 5;\nconsole.log(score);'}
 ];
 function setPlaygroundCode(code){ state.coding.playgroundCode = code; state.coding.playgroundOutput = null; render(); }
+function loadOperatorExample(i){ state.coding.playgroundChallenge=null; setPlaygroundCode(operatorLessons[i].example); runPlayground(); }
+function loadOperatorChallenge(i){ state.coding.playgroundChallenge = i; state.coding.playgroundCode = operatorLessons[i].challenge.starter; state.coding.playgroundOutput = null; state.coding.showSolution = false; render(); }
+function toggleSolution(){ state.coding.showSolution = !state.coding.showSolution; render(); }
+
 function renderPlayground(){
   const out = state.coding.playgroundOutput;
-  const examples = playgroundExamples.map(ex=>`<button class="fchip" onclick="setPlaygroundCode(${JSON.stringify(ex.code)})">${esc(ex.label)}</button>`).join('');
+  const activeIdx = state.coding.playgroundChallenge;
+  const lessonCards = operatorLessons.map((op,i)=>`
+    <div class="card" style="${activeIdx===i?'border-color:var(--accent);':''}">
+      <h3 style="font-size:.95rem;margin-bottom:8px;">${esc(op.category)}</h3>
+      <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px;">
+        ${op.ops.map(([sym,meaning])=>`<span class="chip cat" style="font-family:var(--mono);">${esc(sym)} <span style="font-family:var(--sans);font-weight:400;">— ${esc(meaning)}</span></span>`).join('')}
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        <button class="btn ghost sm" onclick="loadOperatorExample(${i})">See it work</button>
+        <button class="btn sm" onclick="loadOperatorChallenge(${i})">Try yourself</button>
+      </div>
+    </div>`).join('');
+
+  let challengeBanner = '';
+  if(activeIdx!=null){
+    const ch = operatorLessons[activeIdx].challenge;
+    challengeBanner = `<div class="rulebox" style="border-left-color:var(--accent);">
+      <b>Your turn — ${esc(operatorLessons[activeIdx].category)}:</b> ${esc(ch.prompt)}
+      <div style="margin-top:8px;"><button class="btn ghost sm" onclick="toggleSolution()">${state.coding.showSolution?'Hide':'Show'} a solution</button></div>
+      ${state.coding.showSolution ? `<pre class="code-block" style="margin-top:8px;">${esc(operatorLessons[activeIdx].solution)}</pre>` : ''}
+    </div>`;
+  }
+
   let outHtml = '';
   if(out){
     if(out.error){
@@ -813,15 +874,16 @@ function renderPlayground(){
     } else {
       const lines = [];
       out.logs.forEach(l=>lines.push(`<div>${esc(l)}</div>`));
-      if(out.hasResult) lines.push(`<div style="color:var(--ink-dim);">→ ${esc(typeof out.result==='object' ? JSON.stringify(out.result) : String(out.result))}</div>`);
+      if(out.hasResult && out.result!==undefined) lines.push(`<div style="color:var(--ink-dim);">→ ${esc(typeof out.result==='object' ? JSON.stringify(out.result) : String(out.result))}</div>`);
       if(!lines.length) lines.push(`<div style="color:var(--ink-dim);">Ran with no output — add a console.log(...) to see a value.</div>`);
       outHtml = `<pre class="code-block" style="margin-top:10px;">${lines.join('')}</pre>`;
     }
   }
   return `
-  <div class="filterbar">${examples}</div>
+  <div class="grid2">${lessonCards}</div>
+  ${challengeBanner}
   <div class="card">
-    <div style="font-size:.8rem;color:var(--ink-dim);margin-bottom:6px;">Code:</div>
+    <div style="font-size:.8rem;color:var(--ink-dim);margin-bottom:6px;">Your workspace — click "See it work" or "Try yourself" above, or just type anything here:</div>
     <textarea class="code" rows="5" oninput="state.coding.playgroundCode=this.value">${esc(state.coding.playgroundCode)}</textarea>
     <div style="margin-top:10px;"><button class="btn" onclick="runPlayground()">▶ Run</button></div>
     ${outHtml}
