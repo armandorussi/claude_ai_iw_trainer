@@ -310,6 +310,7 @@ function retakeStatus(){
 
 const sprintPlan = [
   {label:'Right now / today (Fri)', items:[
+    {id:'playground', text:'Try It playground — poke at a few operators and expressions before anything else', view:'coding', tab:'playground'},
     {id:'rules', text:'Read all 6 Golden Rules once, out loud', view:'rules'},
     {id:'primer', text:'JS Syntax Primer — start here if the drills look unfamiliar', view:'coding', tab:'primer'},
     {id:'pyprimer', text:'Python Syntax Primer — optional second reference, no language was actually required last time', view:'coding', tab:'pyprimer'},
@@ -452,7 +453,7 @@ let state = {
   practice:{cat:'all', idx:0, order:[]},
   session:{answers:{}}, // qid -> {text, score, feedback, elapsedSec}
   mock:{active:false, idx:0, seconds:1800, timerId:null, log:[]},
-  coding:{tab:'primer', drillIdx:0, probIdx:0, code:{}, results:{}, narrate:{}, lastInput:Date.now(), nudgeTimerId:null},
+  coding:{tab:'playground', drillIdx:0, probIdx:0, code:{}, results:{}, narrate:{}, lastInput:Date.now(), nudgeTimerId:null, playgroundCode:'2 + 3', playgroundOutput:null},
   drillDone: JSON.parse(localStorage.getItem(LS_DRILLS)||'{}'),
   sprint: JSON.parse(localStorage.getItem(LS_SPRINT)||'{}'),
   speech:{
@@ -493,6 +494,24 @@ function deepEqUnordered(a,b){
     return JSON.stringify(na)===JSON.stringify(nb);
   }
   return JSON.stringify(a)===JSON.stringify(b);
+}
+function runPlayground(){
+  const code = state.coding.playgroundCode || '';
+  const logs = [];
+  const fakeConsole = { log: (...args)=> logs.push(args.map(a=> (typeof a==='object'&&a!==null) ? JSON.stringify(a) : String(a)).join(' ')) };
+  let result, hasResult=false, error=null;
+  try{
+    const fn = new Function('console', `"use strict";\nreturn (\n${code}\n);`);
+    result = fn(fakeConsole);
+    hasResult = true;
+  }catch(e1){
+    try{
+      const fn2 = new Function('console', `"use strict";\n${code}\n`);
+      fn2(fakeConsole);
+    }catch(e2){ error = e2.message; }
+  }
+  state.coding.playgroundOutput = { logs, result, hasResult, error };
+  render();
 }
 function runUserFn(entryName, code, argsList){
   let fn;
@@ -762,15 +781,54 @@ function renderFeedback(q, res){
 
 function viewCoding(){
   const tabs = `<div class="tabs">
+    <button class="tab ${state.coding.tab==='playground'?'active':''}" onclick="setCodingTab('playground')">Try It (JS)</button>
     <button class="tab ${state.coding.tab==='primer'?'active':''}" onclick="setCodingTab('primer')">JS Syntax Primer</button>
     <button class="tab ${state.coding.tab==='pyprimer'?'active':''}" onclick="setCodingTab('pyprimer')">Python Syntax Primer</button>
-    <button class="tab ${state.coding.tab==='drills'?'active':''}" onclick="setCodingTab('drills')">Warm-up Drills</button>
+    <button class="tab ${state.coding.tab==='drills'?'active':''}" onclick="setCodingTab('drills')">Warm-up Drills (JS)</button>
     <button class="tab ${state.coding.tab==='real'?'active':''}" onclick="setCodingTab('real')">The Two Real Problems</button>
   </div>`;
+  if(state.coding.tab==='playground') return `<div class="eyebrow">Coding Lab</div><h1>Try It</h1><p class="sub">Type any small JavaScript snippet and run it instantly — no function, no test cases, just see what happens. This only runs JavaScript (Python needs a much bigger download to execute safely in-browser) — for live Python, see the note below.</p>${tabs}${renderPlayground()}`;
   if(state.coding.tab==='primer') return `<div class="eyebrow">Coding Lab</div><h1>JS Syntax Primer</h1><p class="sub">The warm-up drills below run in JavaScript. If Java or Dart/Flutter is the last language you touched, this maps what you already know onto JS syntax — start here before the drills.</p>${tabs}${renderPrimer(syntaxPrimer)}`;
   if(state.coding.tab==='pyprimer') return `<div class="eyebrow">Coding Lab</div><h1>Python Syntax Primer</h1><p class="sub">Your actual transcript never named a language or showed a code editor — this is optional extra scaffolding, not a signal Python is required. General reports about Berribot's platform mention Python often, but those are mostly from engineering-role candidates with a visible code editor, which your own transcript doesn't show. Use whichever primer (JS or this one) helps you think most clearly.</p>${tabs}${renderPrimer(pythonPrimer)}`;
   if(state.coding.tab==='drills') return `<div class="eyebrow">Coding Lab</div><h1>Warm-up Drills</h1><p class="sub">Syntax, operators, function outputs, arrays, and linear search — the fundamentals underneath both real interview problems.</p>${tabs}${renderDrill()}`;
   return `<div class="eyebrow">Coding Lab</div><h1>The Two Real Problems</h1><p class="sub">Verbatim from your Berribot technical assessment. Both went unanswered live — this is where that gets fixed. Your transcript never specified a language or showed a code editor — you're free to answer in plain English, pseudocode, or real code in whatever language you're most fluent in. JS/Python here are just scaffolding to help you nail the logic.</p>${tabs}${renderProblem()}`;
+}
+
+const playgroundExamples = [
+  {label:'Add numbers', code:'2 + 3'},
+  {label:'Comparison', code:'5 % 2 === 1'},
+  {label:'Array index', code:'const nums = [3, 7, 2];\nnums[1]'},
+  {label:'Array length', code:'const nums = [3, 7, 2];\nnums.length'},
+  {label:'A loop, printed', code:'const nums = [3, 7, 2];\nfor (let i = 0; i < nums.length; i++) {\n  console.log(i, nums[i]);\n}'},
+  {label:'If / else', code:'const n = 7;\nif (n % 2 === 0) {\n  console.log("even");\n} else {\n  console.log("odd");\n}'}
+];
+function setPlaygroundCode(code){ state.coding.playgroundCode = code; state.coding.playgroundOutput = null; render(); }
+function renderPlayground(){
+  const out = state.coding.playgroundOutput;
+  const examples = playgroundExamples.map(ex=>`<button class="fchip" onclick="setPlaygroundCode(${JSON.stringify(ex.code)})">${esc(ex.label)}</button>`).join('');
+  let outHtml = '';
+  if(out){
+    if(out.error){
+      outHtml = `<div class="testcase fail" style="margin-top:10px;"><span>Error</span><span class="badge-status">${esc(out.error)}</span></div>`;
+    } else {
+      const lines = [];
+      out.logs.forEach(l=>lines.push(`<div>${esc(l)}</div>`));
+      if(out.hasResult) lines.push(`<div style="color:var(--ink-dim);">→ ${esc(typeof out.result==='object' ? JSON.stringify(out.result) : String(out.result))}</div>`);
+      if(!lines.length) lines.push(`<div style="color:var(--ink-dim);">Ran with no output — add a console.log(...) to see a value.</div>`);
+      outHtml = `<pre class="code-block" style="margin-top:10px;">${lines.join('')}</pre>`;
+    }
+  }
+  return `
+  <div class="filterbar">${examples}</div>
+  <div class="card">
+    <div style="font-size:.8rem;color:var(--ink-dim);margin-bottom:6px;">Code:</div>
+    <textarea class="code" rows="5" oninput="state.coding.playgroundCode=this.value">${esc(state.coding.playgroundCode)}</textarea>
+    <div style="margin-top:10px;"><button class="btn" onclick="runPlayground()">▶ Run</button></div>
+    ${outHtml}
+  </div>
+  <div class="rulebox" style="border-left-color:var(--accent);">
+    <b>Want to test real Python instead?</b> This playground only runs JS. For live Python with zero setup, try <a href="https://www.w3schools.com/python/trypython.asp" target="_blank" rel="noopener">W3Schools' Try Python editor</a> or <a href="https://trinket.io/python" target="_blank" rel="noopener">trinket.io/python</a> — both are free, no signup, and run instantly in a browser tab.
+  </div>`;
 }
 
 function renderPrimer(cards){
