@@ -312,6 +312,7 @@ const sprintPlan = [
   {label:'Right now / today (Fri)', items:[
     {id:'rules', text:'Read all 6 Golden Rules once, out loud', view:'rules'},
     {id:'primer', text:'JS Syntax Primer — start here if the drills look unfamiliar', view:'coding', tab:'primer'},
+    {id:'pyprimer', text:'Python Syntax Primer — Berribot reportedly uses Python often, review this too', view:'coding', tab:'pyprimer'},
     {id:'drills', text:'Coding Lab → all 8 warm-up drills', view:'coding', tab:'drills'},
     {id:'p1', text:'Solve the array-filter problem (Problem 1) from scratch, no hints', view:'coding', tab:'real'},
     {id:'p2', text:'Solve the 3Sum problem (Problem 2) from scratch, no hints', view:'coding', tab:'real'},
@@ -349,6 +350,28 @@ const syntaxPrimer = [
    note:".filter() alone is enough to solve Problem 1 in this app (the array-filter question): nums.filter(n => n !== target)."},
   {title:'Sorting numbers (the gotcha)', js:'nums.sort();               // WRONG for numbers — sorts as text\nnums.sort((a, b) => a - b); // correct ascending numeric sort',
    note:"This one is a real trap coming from Java/Dart, where sort() handles numbers correctly by default. In JS it doesn't — always pass (a,b) => a-b for ascending numbers. Needed for Problem 2 (3Sum)."}
+];
+
+/* ---------------- PYTHON PRIMER ---------------- */
+/* Multiple independent reports on Berribot's actual platform describe Python (and SQL) as the
+   common language for its coding questions — this app's live test-runner stays JS (no safe
+   in-browser way to execute real Python without a large extra download), but the logic is
+   identical. This primer + the Python reference solutions below close that gap. */
+const pythonPrimer = [
+  {title:'Variables', js:'x = 5\nname = "Armando"\nx = 6   # fine, no declaration keyword at all',
+   note:"No let/const/var, no type keywords. Just name = value. Indentation (not curly braces) defines blocks — this is the single biggest structural difference from Java/Dart/JS."},
+  {title:'Equality & comparison', js:'5 == 5      # true — this IS the right operator in Python\n5 == "5"    # false — different types, no coercion\n5 != 6      # true\n5 <= 6      # true',
+   note:"Python's == already does what JS's === does (strict, no coercion) — you do NOT need a === equivalent. This is a relief coming from the JS primer above."},
+  {title:'If / else', js:'if n % 2 == 0:\n    return True\nelse:\n    return False',
+   note:"No parentheses around the condition, no curly braces — a colon plus indentation defines the block. True/False are capitalized in Python, unlike JS's true/false."},
+  {title:'Loops', js:'for i in range(len(nums)):\n    pass  # classic index loop\n\nfor n in nums:\n    pass  # for-each, direct — this is the common way\n\nwhile left < right:\n    pass',
+   note:"for n in nums is the everyday loop in Python — reach for it before an index loop unless you specifically need the index too (then use enumerate(nums))."},
+  {title:'Functions', js:'def find_max(nums):\n    return max(nums)',
+   note:"def, a colon, and an indented body — no return type, no parameter types, no braces. Python has a built-in max()/min() for iterables, so this one is a one-liner."},
+  {title:'Lists (arrays)', js:'nums = [3, 7, 2]\nlen(nums)                 # 3 — a function call, not a property\nnums[0]                   # 3 — zero-indexed, same as everywhere else\nnums.append(9)            # adds to the end\n[n for n in nums if n != 2]  # list comprehension — Python\'s .filter()',
+   note:"That last line is the Python equivalent of JS's nums.filter(n => n !== 2) — it's called a list comprehension and it's the idiomatic way to filter in Python. This alone solves Problem 1."},
+  {title:'Sorting numbers (no gotcha here)', js:'nums.sort()          # correct — ascending, numeric, by default\nsorted(nums)         # same, but returns a new list instead of sorting in place',
+   note:"Unlike JS, Python's sort() handles numbers correctly out of the box — no comparator needed. One less thing to remember for Problem 2 (3Sum) if it turns out to be Python."}
 ];
 
 /* ---------------- CODING DRILLS ---------------- */
@@ -401,7 +424,8 @@ const codingProblems = [
      "Simplest correct approach: nums.filter(n => n !== target). That alone passes every test here — say it out loud first.",
      "If asked to do it in-place / without extra memory: walk the array with a 'write' index; whenever nums[read] !== target, copy it to nums[write] and increment write; at the end slice to length write.",
      "State the complexity either way: O(n) time, and O(n) or O(1) extra space depending on the approach."],
-   hints:["Start with the one-liner: nums.filter(n => n !== target) — correct beats clever.","For the in-place variant: two pointers, read and write, moving independently."]},
+   hints:["Start with the one-liner: nums.filter(n => n !== target) — correct beats clever.","For the in-place variant: two pointers, read and write, moving independently."],
+   pyRef:"def remove_target(nums, target):\n    return [n for n in nums if n != target]"},
   {id:'p2', title:'Triplet Sum to Zero (3Sum)',
    pattern:'Sort + two-pointer, with de-duplication',
    prompt:"Given an integer array nums, find all unique triplets [a, b, c] such that a + b + c === 0. Each triplet should be listed in non-decreasing order within itself. The result must not contain duplicate triplets; the order of triplets in the output doesn't matter.",
@@ -415,7 +439,8 @@ const codingProblems = [
      "Step 2: fix one element nums[i] with a loop; skip it if it's the same as the previous i (de-dupes the outer loop).",
      "Step 3: for the rest of the array, run two pointers (left just after i, right at the end) toward each other: if the three-sum is 0, record the triplet and move both pointers past any duplicates; if the sum is too low, move left up; if too high, move right down.",
      "Complexity: O(n²) — sort is O(n log n), the pointer sweep for each i is O(n)."],
-   hints:["Brute force fallback if two-pointer won't come: triple-nested loop checking every i<j<k, then dedupe by stringifying sorted triplets into a Set. Slower (O(n³)) but it's a real, working answer — say that out loud rather than going silent.","Sort first. Always sort first for this family of problem."]}
+   hints:["Brute force fallback if two-pointer won't come: triple-nested loop checking every i<j<k, then dedupe by stringifying sorted triplets into a Set. Slower (O(n³)) but it's a real, working answer — say that out loud rather than going silent.","Sort first. Always sort first for this family of problem."],
+   pyRef:"def three_sum(nums):\n    nums.sort()\n    res = []\n    n = len(nums)\n    for i in range(n - 2):\n        if i > 0 and nums[i] == nums[i - 1]:\n            continue\n        l, r = i + 1, n - 1\n        while l < r:\n            total = nums[i] + nums[l] + nums[r]\n            if total == 0:\n                res.append([nums[i], nums[l], nums[r]])\n                while l < r and nums[l] == nums[l + 1]:\n                    l += 1\n                while l < r and nums[r] == nums[r - 1]:\n                    r -= 1\n                l += 1\n                r -= 1\n            elif total < 0:\n                l += 1\n            else:\n                r -= 1\n    return res"}
 ];
 
 /* ---------------- STATE ---------------- */
@@ -732,16 +757,18 @@ function renderFeedback(q, res){
 function viewCoding(){
   const tabs = `<div class="tabs">
     <button class="tab ${state.coding.tab==='primer'?'active':''}" onclick="setCodingTab('primer')">JS Syntax Primer</button>
+    <button class="tab ${state.coding.tab==='pyprimer'?'active':''}" onclick="setCodingTab('pyprimer')">Python Syntax Primer</button>
     <button class="tab ${state.coding.tab==='drills'?'active':''}" onclick="setCodingTab('drills')">Warm-up Drills</button>
     <button class="tab ${state.coding.tab==='real'?'active':''}" onclick="setCodingTab('real')">The Two Real Problems</button>
   </div>`;
-  if(state.coding.tab==='primer') return `<div class="eyebrow">Coding Lab</div><h1>JS Syntax Primer</h1><p class="sub">Everything here is JavaScript. If Java or Dart/Flutter is the last language you touched, this maps what you already know onto JS syntax — start here before the drills.</p>${tabs}${renderPrimer()}`;
+  if(state.coding.tab==='primer') return `<div class="eyebrow">Coding Lab</div><h1>JS Syntax Primer</h1><p class="sub">The warm-up drills below run in JavaScript. If Java or Dart/Flutter is the last language you touched, this maps what you already know onto JS syntax — start here before the drills.</p>${tabs}${renderPrimer(syntaxPrimer)}`;
+  if(state.coding.tab==='pyprimer') return `<div class="eyebrow">Coding Lab</div><h1>Python Syntax Primer</h1><p class="sub">Reports on Berribot's actual coding environment describe Python as a common language for its questions — possibly more likely than JS. The drills below only run in JS, but this primer plus the Python reference solutions on the real problems let you rehearse the same logic in Python.</p>${tabs}${renderPrimer(pythonPrimer)}`;
   if(state.coding.tab==='drills') return `<div class="eyebrow">Coding Lab</div><h1>Warm-up Drills</h1><p class="sub">Syntax, operators, function outputs, arrays, and linear search — the fundamentals underneath both real interview problems.</p>${tabs}${renderDrill()}`;
   return `<div class="eyebrow">Coding Lab</div><h1>The Two Real Problems</h1><p class="sub">Verbatim from your Berribot technical assessment. Both went unanswered live — this is where that gets fixed.</p>${tabs}${renderProblem()}`;
 }
 
-function renderPrimer(){
-  return syntaxPrimer.map(c=>`
+function renderPrimer(cards){
+  return cards.map(c=>`
     <div class="card">
       <h3 style="font-size:1rem;">${esc(c.title)}</h3>
       <pre class="code-block">${esc(c.js)}</pre>
@@ -804,6 +831,7 @@ function renderProblem(){
     </div>
     ${results ? results.map((r,i)=>`<div class="testcase ${r.pass?'pass':'fail'}"><span>${JSON.stringify(p.tests[i])}</span><span class="badge-status">${r.pass?'✓ pass':(r.error?'error: '+esc(r.error):'✗ got '+JSON.stringify(r.got))}</span></div>`).join('') : ''}
     <details style="margin-top:12px;"><summary style="cursor:pointer;font-size:.85rem;color:var(--ink-dim);">Hints</summary>${p.hints.map(h=>`<p class="hintline">${esc(h)}</p>`).join('')}</details>
+    ${p.pyRef ? `<details style="margin-top:12px;"><summary style="cursor:pointer;font-size:.85rem;color:var(--ink-dim);">Python reference (same logic — read-only, not executed here)</summary><pre class="code-block" style="margin-top:8px;">${esc(p.pyRef)}</pre></details>` : ''}
   </div>`;
 }
 
