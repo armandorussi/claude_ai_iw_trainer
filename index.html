@@ -336,21 +336,58 @@ const sprintPlan = [
 /* ---------------- SYNTAX PRIMER (JS, mapped from Java/Dart memory) ---------------- */
 const syntaxPrimer = [
   {title:'Variables', js:'let x = 5;\nconst name = "Armando";\nx = 6;        // ok, let can change\n// name = "x"; // error, const cannot',
-   note:"No type keywords like Java's int/String or Dart's typed vars. `let` = reassignable, `const` = can't be reassigned. Default to `const`; switch to `let` only when the value needs to change."},
+   note:"No type keywords like Java's int/String or Dart's typed vars. `let` = reassignable, `const` = can't be reassigned. Default to `const`; switch to `let` only when the value needs to change.",
+   steps:[
+     {label:'Declare a reassignable variable', code:'let x = 5;'},
+     {label:'Declare a constant', code:'const name = "Armando";'},
+     {label:'Reassign the let variable — this is fine', code:'x = 6;'}
+   ]},
   {title:'Equality & comparison', js:'5 === 5     // true\n5 === "5"   // false — no type coercion\n5 == "5"    // true — coerces types, AVOID\n5 !== 6     // true\n5 <= 6      // true',
-   note:"Always use === and !==, never == or !=. Everything else (<, >, <=, >=, %) works exactly like Java/Dart."},
+   note:"Always use === and !==, never == or !=. Everything else (<, >, <=, >=, %) works exactly like Java/Dart.",
+   steps:[
+     {label:'Strict equality — same type and value', code:'5 === 5'},
+     {label:'Strict equality across different types — always false', code:'5 === "5"'},
+     {label:'Not-equal and ordering comparisons', code:'5 !== 6\n5 <= 6'}
+   ]},
   {title:'If / else', js:'if (n % 2 === 0) {\n  return true;\n} else {\n  return false;\n}',
-   note:"Structurally identical to Java/Dart if/else. % is modulo, same meaning as Java."},
+   note:"Structurally identical to Java/Dart if/else. % is modulo, same meaning as Java.",
+   steps:[
+     {label:'Write the condition', code:'if (n % 2 === 0) {'},
+     {label:'The true branch, then open the else', code:'  return true;\n} else {'},
+     {label:'The false branch, then close it', code:'  return false;\n}'}
+   ]},
   {title:'Loops', js:'for (let i = 0; i < nums.length; i++) {\n  // classic index loop\n}\n\nfor (const n of nums) {\n  // for-each, like Dart\'s "for (var n in nums)"\n}\n\nwhile (left < right) {\n  // same as Java/Dart while\n}',
-   note:"nums.length is a property (no parentheses) — unlike Java's list.size() or a String's .length(). for...of is JS's for-each loop."},
+   note:"nums.length is a property (no parentheses) — unlike Java's list.size() or a String's .length(). for...of is JS's for-each loop.",
+   steps:[
+     {label:'Classic index loop', code:'for (let i = 0; i < nums.length; i++) {\n}'},
+     {label:'For-each loop', code:'for (const n of nums) {\n}'},
+     {label:'While loop', code:'while (left < right) {\n}'}
+   ]},
   {title:'Functions', js:'function findMax(nums) {\n  return Math.max(...nums);\n}\n\n// same thing, arrow-function shorthand:\nconst findMax = (nums) => {\n  return Math.max(...nums);\n};',
-   note:"No return type or parameter types to declare — that's the biggest visual difference from Java. Both forms above do the same thing; use whichever reads clearer to you, both appear in this app."},
+   note:"No return type or parameter types to declare — that's the biggest visual difference from Java. Both forms above do the same thing; use whichever reads clearer to you, both appear in this app.",
+   steps:[
+     {label:'A standard function declaration', code:'function findMax(nums) {\n  return Math.max(...nums);\n}'},
+     {label:'The exact same thing, arrow-function shorthand', code:'const findMax = (nums) => {\n  return Math.max(...nums);\n};'}
+   ]},
   {title:'The => arrow shorthand', js:'n => n !== target\n// expands to:\nfunction(n) { return n !== target; }',
-   note:"Whenever you see =>, mentally expand it into a normal function with an implicit return. `nums.filter(n => n !== target)` reads as: for each n in nums, keep it if n is not target."},
+   note:"Whenever you see =>, mentally expand it into a normal function with an implicit return. `nums.filter(n => n !== target)` reads as: for each n in nums, keep it if n is not target.",
+   steps:[
+     {label:'The short form you\'ll see in this app', code:'n => n !== target'},
+     {label:'What it actually expands to', code:'function(n) { return n !== target; }'}
+   ]},
   {title:'Arrays', js:'const nums = [3, 7, 2];\nnums.length              // 3\nnums[0]                  // 3 — zero-indexed, same as Java/Dart\nnums.push(9)             // adds to the end\nnums.filter(n => n !== 2) // new array, keeps elements where the test is true',
-   note:".filter() alone is enough to solve Problem 1 in this app (the array-filter question): nums.filter(n => n !== target)."},
+   note:".filter() alone is enough to solve Problem 1 in this app (the array-filter question): nums.filter(n => n !== target).",
+   steps:[
+     {label:'Create the array', code:'const nums = [3, 7, 2];'},
+     {label:'Access its length and an index', code:'nums.length\nnums[0]'},
+     {label:'Add to the end, and filter', code:'nums.push(9);\nnums.filter(n => n !== 2);'}
+   ]},
   {title:'Sorting numbers (the gotcha)', js:'nums.sort();               // WRONG for numbers — sorts as text\nnums.sort((a, b) => a - b); // correct ascending numeric sort',
-   note:"This one is a real trap coming from Java/Dart, where sort() handles numbers correctly by default. In JS it doesn't — always pass (a,b) => a-b for ascending numbers. Needed for Problem 2 (3Sum)."}
+   note:"This one is a real trap coming from Java/Dart, where sort() handles numbers correctly by default. In JS it doesn't — always pass (a,b) => a-b for ascending numbers. Needed for Problem 2 (3Sum).",
+   steps:[
+     {label:'The wrong way — sorts as text, not numbers', code:'nums.sort();'},
+     {label:'The right way — always pass a comparator', code:'nums.sort((a, b) => a - b);'}
+   ]}
 ];
 
 /* ---------------- PYTHON PRIMER ---------------- */
@@ -377,34 +414,72 @@ const pythonPrimer = [
 
 /* ---------------- CODING DRILLS ---------------- */
 const drills = [
-  {id:'d1',title:'findMax',cat:'Max / Min',prompt:'Write findMax(nums) returning the largest number in the array.',
+  {id:'d1',title:'findMax',entry:'findMax',cat:'Max / Min',prompt:'Write findMax(nums) returning the largest number in the array.',
    starter:'function findMax(nums) {\n  \n}',
    tests:[[[3,7,2]],[[5]],[[-3,-9,-1]]],expected:[7,5,-1],
-   hint:"Track a running max, starting from nums[0], comparing with > as you loop."},
-  {id:'d2',title:'findMin',cat:'Max / Min',prompt:'Write findMin(nums) returning the smallest number in the array.',
+   hint:"Track a running max, starting from nums[0], comparing with > as you loop.",
+   steps:[
+     {label:'Open the function and start tracking the max with the first element', code:'function findMax(nums) {\n  let max = nums[0];'},
+     {label:'Loop through the rest of the array', code:'  for (let i = 1; i < nums.length; i++) {'},
+     {label:'If this element is bigger, update max', code:'    if (nums[i] > max) {\n      max = nums[i];\n    }\n  }'},
+     {label:'Return the result and close the function', code:'  return max;\n}'}
+   ]},
+  {id:'d2',title:'findMin',entry:'findMin',cat:'Max / Min',prompt:'Write findMin(nums) returning the smallest number in the array.',
    starter:'function findMin(nums) {\n  \n}',
    tests:[[[3,7,2]],[[-3,-9,-1]],[[8]]],expected:[2,-9,8],
-   hint:"Same idea as findMax, flip the comparison operator to <."},
-  {id:'d3',title:'isEven',cat:'Operators & Logic',prompt:'Write isEven(n) returning true if n is even, false otherwise.',
+   hint:"Same idea as findMax, flip the comparison operator to <.",
+   steps:[
+     {label:'Open the function and start tracking the min with the first element', code:'function findMin(nums) {\n  let min = nums[0];'},
+     {label:'Loop through the rest of the array', code:'  for (let i = 1; i < nums.length; i++) {'},
+     {label:'If this element is smaller, update min', code:'    if (nums[i] < min) {\n      min = nums[i];\n    }\n  }'},
+     {label:'Return the result and close the function', code:'  return min;\n}'}
+   ]},
+  {id:'d3',title:'isEven',entry:'isEven',cat:'Operators & Logic',prompt:'Write isEven(n) returning true if n is even, false otherwise.',
    starter:'function isEven(n) {\n  \n}',
    tests:[[4],[7],[0],[-2]],expected:[true,false,true,true],
-   hint:"n % 2 === 0. Remember negative evens still satisfy this in JS."},
-  {id:'d4',title:'sumArray',cat:'Arrays',prompt:'Write sumArray(nums) returning the sum of all elements.',
+   hint:"n % 2 === 0. Remember negative evens still satisfy this in JS.",
+   steps:[
+     {label:'Open the function', code:'function isEven(n) {'},
+     {label:'Return whether the remainder is 0, and close the function', code:'  return n % 2 === 0;\n}'}
+   ]},
+  {id:'d4',title:'sumArray',entry:'sumArray',cat:'Arrays',prompt:'Write sumArray(nums) returning the sum of all elements.',
    starter:'function sumArray(nums) {\n  \n}',
    tests:[[[1,2,3]],[[]],[[-5,5,10]]],expected:[6,0,10],
-   hint:"Start a total at 0 before the loop — an empty array should return 0, not undefined."},
-  {id:'d5',title:'contains',cat:'Search & Comparison',prompt:'Write contains(nums, target) returning true if target exists anywhere in nums, else false. (Finding a number in a list of numbers.)',
+   hint:"Start a total at 0 before the loop — an empty array should return 0, not undefined.",
+   steps:[
+     {label:'Open the function and start a total at 0', code:'function sumArray(nums) {\n  let total = 0;'},
+     {label:'Loop through every element', code:'  for (const n of nums) {'},
+     {label:'Add each one to the total', code:'    total += n;\n  }'},
+     {label:'Return the total and close the function', code:'  return total;\n}'}
+   ]},
+  {id:'d5',title:'contains',entry:'contains',cat:'Search & Comparison',prompt:'Write contains(nums, target) returning true if target exists anywhere in nums, else false. (Finding a number in a list of numbers.)',
    starter:'function contains(nums, target) {\n  \n}',
    tests:[[[1,2,3],2],[[1,2,3],9],[[],1]],expected:[true,false,false],
-   hint:"Loop through and compare each element with === to target; return true the moment you find a match."},
-  {id:'d6',title:'indexOfFirst',cat:'Search & Comparison',prompt:'Write indexOfFirst(nums, target) returning the index of the first occurrence of target, or -1 if not found.',
+   hint:"Loop through and compare each element with === to target; return true the moment you find a match.",
+   steps:[
+     {label:'Open the function and loop through the array', code:'function contains(nums, target) {\n  for (const n of nums) {'},
+     {label:"If this element matches, we're done", code:'    if (n === target) {\n      return true;\n    }\n  }'},
+     {label:'If the loop finishes with no match, close the function', code:'  return false;\n}'}
+   ]},
+  {id:'d6',title:'indexOfFirst',entry:'indexOfFirst',cat:'Search & Comparison',prompt:'Write indexOfFirst(nums, target) returning the index of the first occurrence of target, or -1 if not found.',
    starter:'function indexOfFirst(nums, target) {\n  \n}',
    tests:[[[5,3,3,7],3],[[1,2,3],9],[[],1]],expected:[1,-1,-1],
-   hint:"This is the exact building block for the real interview's array-filter problem — same loop shape, just return i instead of true."},
-  {id:'d7',title:'countUnique (sorted array, two-pointer)',cat:'Two-Pointer Warm-up',prompt:'Write countUnique(nums) that returns the count of unique values in a SORTED array, using a single pass (no Set allowed — practice the two-pointer instinct).',
+   hint:"This is the exact building block for the real interview's array-filter problem — same loop shape, just return i instead of true.",
+   steps:[
+     {label:'Open the function and loop with an index', code:'function indexOfFirst(nums, target) {\n  for (let i = 0; i < nums.length; i++) {'},
+     {label:'Check for a match at this index', code:'    if (nums[i] === target) {\n      return i;\n    }\n  }'},
+     {label:'No match found anywhere, close the function', code:'  return -1;\n}'}
+   ]},
+  {id:'d7',title:'countUnique (sorted array, two-pointer)',entry:'countUnique',cat:'Two-Pointer Warm-up',prompt:'Write countUnique(nums) that returns the count of unique values in a SORTED array, using a single pass (no Set allowed — practice the two-pointer instinct).',
    starter:'function countUnique(nums) {\n  \n}',
    tests:[[[1,1,2,3,3,3]],[[1,2,3]],[[]],[[5,5,5]]],expected:[3,3,0,1],
-   hint:"Walk the array once; only count an element when it differs from the previous one you counted."},
+   hint:"Walk the array once; only count an element when it differs from the previous one you counted.",
+   steps:[
+     {label:'Open the function and start a counter at 0', code:'function countUnique(nums) {\n  let count = 0;'},
+     {label:'Loop through the sorted array by index', code:'  for (let i = 0; i < nums.length; i++) {'},
+     {label:'Only count when it differs from the one before it', code:'    if (i === 0 || nums[i] !== nums[i - 1]) {\n      count++;\n    }\n  }'},
+     {label:'Return the count and close the function', code:'  return count;\n}'}
+   ]},
   {id:'d8',title:'predictOutput',cat:'Function Output Prediction',mcq:true,
    prompt:"What does this log?\n\nlet x = 5;\nfunction change(x) { x = 10; return x; }\nconsole.log(change(x), x);",
    options:["10 10","10 5","5 10","undefined 5"],answer:"10 5",
@@ -426,7 +501,11 @@ const codingProblems = [
      "If asked to do it in-place / without extra memory: walk the array with a 'write' index; whenever nums[read] !== target, copy it to nums[write] and increment write; at the end slice to length write.",
      "State the complexity either way: O(n) time, and O(n) or O(1) extra space depending on the approach."],
    hints:["Start with the one-liner: nums.filter(n => n !== target) — correct beats clever.","For the in-place variant: two pointers, read and write, moving independently."],
-   pyRef:"def remove_target(nums, target):\n    return [n for n in nums if n != target]"},
+   pyRef:"def remove_target(nums, target):\n    return [n for n in nums if n != target]",
+   codeSteps:[
+     {label:'Open the function', code:'function removeTarget(nums, target) {'},
+     {label:'Filter out anything equal to target, and close the function', code:'  return nums.filter(n => n !== target);\n}'}
+   ]},
   {id:'p2', title:'Triplet Sum to Zero (3Sum)',
    pattern:'Sort + two-pointer, with de-duplication',
    prompt:"Given an integer array nums, find all unique triplets [a, b, c] such that a + b + c === 0. Each triplet should be listed in non-decreasing order within itself. The result must not contain duplicate triplets; the order of triplets in the output doesn't matter.",
@@ -441,7 +520,14 @@ const codingProblems = [
      "Step 3: for the rest of the array, run two pointers (left just after i, right at the end) toward each other: if the three-sum is 0, record the triplet and move both pointers past any duplicates; if the sum is too low, move left up; if too high, move right down.",
      "Complexity: O(n²) — sort is O(n log n), the pointer sweep for each i is O(n)."],
    hints:["Brute force fallback if two-pointer won't come: triple-nested loop checking every i<j<k, then dedupe by stringifying sorted triplets into a Set. Slower (O(n³)) but it's a real, working answer — say that out loud rather than going silent.","Sort first. Always sort first for this family of problem."],
-   pyRef:"def three_sum(nums):\n    nums.sort()\n    res = []\n    n = len(nums)\n    for i in range(n - 2):\n        if i > 0 and nums[i] == nums[i - 1]:\n            continue\n        l, r = i + 1, n - 1\n        while l < r:\n            total = nums[i] + nums[l] + nums[r]\n            if total == 0:\n                res.append([nums[i], nums[l], nums[r]])\n                while l < r and nums[l] == nums[l + 1]:\n                    l += 1\n                while l < r and nums[r] == nums[r - 1]:\n                    r -= 1\n                l += 1\n                r -= 1\n            elif total < 0:\n                l += 1\n            else:\n                r -= 1\n    return res"}
+   pyRef:"def three_sum(nums):\n    nums.sort()\n    res = []\n    n = len(nums)\n    for i in range(n - 2):\n        if i > 0 and nums[i] == nums[i - 1]:\n            continue\n        l, r = i + 1, n - 1\n        while l < r:\n            total = nums[i] + nums[l] + nums[r]\n            if total == 0:\n                res.append([nums[i], nums[l], nums[r]])\n                while l < r and nums[l] == nums[l + 1]:\n                    l += 1\n                while l < r and nums[r] == nums[r - 1]:\n                    r -= 1\n                l += 1\n                r -= 1\n            elif total < 0:\n                l += 1\n            else:\n                r -= 1\n    return res",
+   codeSteps:[
+     {label:'Open the function and sort a copy of the array', code:'function threeSum(nums) {\n  nums = [...nums].sort((a, b) => a - b);\n  const res = [];'},
+     {label:'Loop over each index i, skipping duplicates', code:'  for (let i = 0; i < nums.length - 2; i++) {\n    if (i > 0 && nums[i] === nums[i - 1]) continue;'},
+     {label:'Set up two pointers just after i and at the end', code:'    let l = i + 1, r = nums.length - 1;\n    while (l < r) {'},
+     {label:'Check the three-sum and react', code:'      const sum = nums[i] + nums[l] + nums[r];\n      if (sum === 0) {\n        res.push([nums[i], nums[l], nums[r]]);\n        while (l < r && nums[l] === nums[l + 1]) l++;\n        while (l < r && nums[r] === nums[r - 1]) r--;\n        l++; r--;\n      } else if (sum < 0) { l++; } else { r--; }\n    }\n  }'},
+     {label:'Return the result and close the function', code:'  return res;\n}'}
+   ]}
 ];
 
 /* ---------------- STATE ---------------- */
@@ -453,7 +539,7 @@ let state = {
   practice:{cat:'all', idx:0, order:[]},
   session:{answers:{}}, // qid -> {text, score, feedback, elapsedSec}
   mock:{active:false, idx:0, seconds:1800, timerId:null, log:[]},
-  coding:{tab:'playground', drillIdx:0, probIdx:0, code:{}, results:{}, narrate:{}, lastInput:Date.now(), nudgeTimerId:null, playgroundCode:'let price = 12;\nlet quantity = 3;\nprice * quantity', playgroundOutput:null, playgroundChallenge:null, showSolution:false},
+  coding:{tab:'playground', drillIdx:0, probIdx:0, code:{}, results:{}, narrate:{}, lastInput:Date.now(), nudgeTimerId:null, playgroundCode:'let price = 12;\nlet quantity = 3;\nprice * quantity', playgroundOutput:null, playgroundChallenge:null, showSolution:false, stepProgress:{}},
   drillDone: JSON.parse(localStorage.getItem(LS_DRILLS)||'{}'),
   sprint: JSON.parse(localStorage.getItem(LS_SPRINT)||'{}'),
   speech:{
@@ -626,6 +712,53 @@ function paceLabel(wpm){
   if(wpm<90) return 'slow — you have room to pick up the pace';
   if(wpm>175) return 'fast — might be rushing, make sure every word still lands';
   return 'good conversational pace';
+}
+
+/* ---------------- STEP-BY-STEP TRAINER (shared across Try It, Drills, Real Problems, JS Primer) ---------------- */
+function getStepsFor(kind, id){
+  if(kind==='drill') return (drills.find(d=>d.id===id)||{}).steps;
+  if(kind==='problem') return (codingProblems.find(p=>p.id===id)||{}).codeSteps;
+  if(kind==='try') return (operatorLessons[Number(id)]||{}).steps;
+  if(kind==='primer') return (syntaxPrimer[Number(id)]||{}).steps;
+  return null;
+}
+function stepKey(kind,id){ return kind+':'+id; }
+function revealStep(kind, id, idx){
+  const steps = getStepsFor(kind, id);
+  if(!steps) return;
+  const key = stepKey(kind,id);
+  const revealed = Math.max(state.coding.stepProgress[key]||0, idx+1);
+  state.coding.stepProgress[key] = revealed;
+  const code = steps.slice(0, revealed).map(s=>s.code).join('\n');
+  if(kind==='drill'){ state.coding.code[id] = code; state.coding.results[id] = null; }
+  else if(kind==='problem'){ state.coding.code[id] = code; state.coding.results[id] = null; }
+  else if(kind==='try'){ state.coding.playgroundCode = code; state.coding.playgroundOutput = null; state.coding.playgroundChallenge = Number(id); state.coding.showSolution = false; }
+  render();
+}
+function resetSteps(kind, id){
+  const key = stepKey(kind,id);
+  state.coding.stepProgress[key] = 0;
+  if(kind==='drill'){ const d=drills.find(x=>x.id===id); state.coding.code[id] = d?d.starter:''; state.coding.results[id]=null; }
+  else if(kind==='problem'){ const p=codingProblems.find(x=>x.id===id); state.coding.code[id] = p?p.starter:''; state.coding.results[id]=null; }
+  else if(kind==='try'){ state.coding.playgroundCode = ''; state.coding.playgroundOutput = null; }
+  render();
+}
+function renderStepTrainer(kind, id){
+  const steps = getStepsFor(kind, id);
+  if(!steps || !steps.length) return '';
+  const revealed = state.coding.stepProgress[stepKey(kind,id)] || 0;
+  const rows = steps.map((s,i)=>`
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid var(--line);">
+      <span style="font-size:.85rem;">${i<revealed?'✓ ':''}<b>Step ${i+1}:</b> ${esc(s.label)}</span>
+      <button class="btn ghost sm" onclick="revealStep('${kind}','${id}',${i})">${i<revealed?'Show again':'Show me'}</button>
+    </div>`).join('');
+  const preview = kind==='primer' && revealed>0 ? `<pre class="code-block" style="margin-top:10px;">${esc(steps.slice(0,revealed).map(s=>s.code).join('\n'))}</pre>` : '';
+  return `<details style="margin-top:12px;">
+    <summary style="cursor:pointer;font-size:.85rem;font-weight:600;color:var(--ink-dim);">Step-by-step solution (${revealed}/${steps.length} revealed)</summary>
+    <div style="margin-top:8px;">${rows}</div>
+    ${preview}
+    ${revealed>0?`<button class="btn ghost sm" style="margin-top:8px;" onclick="resetSteps('${kind}','${id}')">Reset</button>`:''}
+  </details>`;
 }
 
 /* ---------------- RENDER HELPERS ---------------- */
@@ -809,7 +942,7 @@ function viewCoding(){
     <button class="tab ${state.coding.tab==='real'?'active':''}" onclick="setCodingTab('real')">The Two Real Problems</button>
   </div>`;
   if(state.coding.tab==='playground') return `<div class="eyebrow">Coding Lab</div><h1>Try It</h1><p class="sub">Type any small JavaScript snippet and run it instantly — no function, no test cases, just see what happens. This only runs JavaScript (Python needs a much bigger download to execute safely in-browser) — for live Python, see the note below.</p>${tabs}${renderPlayground()}`;
-  if(state.coding.tab==='primer') return `<div class="eyebrow">Coding Lab</div><h1>JS Syntax Primer</h1><p class="sub">The warm-up drills below run in JavaScript. If Java or Dart/Flutter is the last language you touched, this maps what you already know onto JS syntax — start here before the drills.</p>${tabs}${renderPrimer(syntaxPrimer)}`;
+  if(state.coding.tab==='primer') return `<div class="eyebrow">Coding Lab</div><h1>JS Syntax Primer</h1><p class="sub">The warm-up drills below run in JavaScript. If Java or Dart/Flutter is the last language you touched, this maps what you already know onto JS syntax — start here before the drills. Each card has a step-by-step breakdown you can reveal piece by piece to build recall.</p>${tabs}${renderPrimer(syntaxPrimer, 'primer')}`;
   if(state.coding.tab==='pyprimer') return `<div class="eyebrow">Coding Lab</div><h1>Python Syntax Primer</h1><p class="sub">Your actual transcript never named a language or showed a code editor — this is optional extra scaffolding, not a signal Python is required. General reports about Berribot's platform mention Python often, but those are mostly from engineering-role candidates with a visible code editor, which your own transcript doesn't show. Use whichever primer (JS or this one) helps you think most clearly.</p>${tabs}${renderPrimer(pythonPrimer)}`;
   if(state.coding.tab==='drills') return `<div class="eyebrow">Coding Lab</div><h1>Warm-up Drills</h1><p class="sub">Syntax, operators, function outputs, arrays, and linear search — the fundamentals underneath both real interview problems.</p>${tabs}${renderDrill()}`;
   return `<div class="eyebrow">Coding Lab</div><h1>The Two Real Problems</h1><p class="sub">Verbatim from your Berribot technical assessment. Both went unanswered live — this is where that gets fixed. Your transcript never specified a language or showed a code editor — you're free to answer in plain English, pseudocode, or real code in whatever language you're most fluent in. JS/Python here are just scaffolding to help you nail the logic.</p>${tabs}${renderProblem()}`;
@@ -819,23 +952,44 @@ const operatorLessons = [
   {category:'Arithmetic', ops:[['+','add'],['-','subtract'],['*','multiply'],['/','divide'],['%','remainder (modulo)'],['**','power']],
    example:'let price = 12;\nlet quantity = 3;\nprice * quantity   // total cost',
    challenge:{prompt:'price is 12, quantity is 3. Write an expression for the total cost, using *.', starter:'let price = 12;\nlet quantity = 3;\n// write your expression on the next line\n'},
-   solution:'let price = 12;\nlet quantity = 3;\nprice * quantity'},
+   solution:'let price = 12;\nlet quantity = 3;\nprice * quantity',
+   steps:[
+     {label:'Declare your variables', code:'let price = 12;\nlet quantity = 3;'},
+     {label:'Multiply them together', code:'price * quantity'}
+   ]},
   {category:'Comparison', ops:[['===','equal to (always use this, not ==)'],['!==','not equal to'],['>','greater than'],['<','less than'],['>=','greater than or equal'],['<=','less than or equal']],
    example:'let age = 20;\nage >= 18   // true if age is 18 or older',
    challenge:{prompt:'age is 17. Write an expression that checks whether age is at least 18, using >=.', starter:'let age = 17;\n// write your expression on the next line\n'},
-   solution:'let age = 17;\nage >= 18'},
+   solution:'let age = 17;\nage >= 18',
+   steps:[
+     {label:'Declare the variable', code:'let age = 17;'},
+     {label:'Compare it against 18', code:'age >= 18'}
+   ]},
   {category:'Logical', ops:[['&&','AND — true only if both sides are true'],['||','OR — true if either side is true'],['!','NOT — flips true to false and back']],
    example:'let hasTicket = true;\nlet hasID = true;\nhasTicket && hasID   // true only if both are true',
    challenge:{prompt:'hasTicket is true, hasID is false. Write an expression that\'s true only when BOTH are true, using &&.', starter:'let hasTicket = true;\nlet hasID = false;\n// write your expression on the next line\n'},
-   solution:'let hasTicket = true;\nlet hasID = false;\nhasTicket && hasID'},
+   solution:'let hasTicket = true;\nlet hasID = false;\nhasTicket && hasID',
+   steps:[
+     {label:'Declare both variables', code:'let hasTicket = true;\nlet hasID = false;'},
+     {label:'Combine them with AND', code:'hasTicket && hasID'}
+   ]},
   {category:'Modulo (remainder)', ops:[['%','remainder after division — the key to even/odd checks']],
    example:'let n = 7;\nn % 2   // 1 (a remainder) means n is odd',
    challenge:{prompt:'n is 8. Write an expression that checks whether n is even, using % and ===.', starter:'let n = 8;\n// write your expression on the next line\n'},
-   solution:'let n = 8;\nn % 2 === 0'},
+   solution:'let n = 8;\nn % 2 === 0',
+   steps:[
+     {label:'Declare the variable', code:'let n = 8;'},
+     {label:'Check the remainder equals zero', code:'n % 2 === 0'}
+   ]},
   {category:'Assignment', ops:[['=','assign a value'],['+=','add, then reassign'],['-=','subtract, then reassign'],['*=','multiply, then reassign']],
    example:'let score = 10;\nscore += 5;   // same as: score = score + 5\nconsole.log(score);',
    challenge:{prompt:'score starts at 10. Add 5 to it using +=, then console.log(score) to see the new value.', starter:'let score = 10;\n// add 5 to score using +=, then console.log(score)\n'},
-   solution:'let score = 10;\nscore += 5;\nconsole.log(score);'}
+   solution:'let score = 10;\nscore += 5;\nconsole.log(score);',
+   steps:[
+     {label:'Declare the starting variable', code:'let score = 10;'},
+     {label:'Add 5 using +=', code:'score += 5;'},
+     {label:'Print the result', code:'console.log(score);'}
+   ]}
 ];
 function setPlaygroundCode(code){ state.coding.playgroundCode = code; state.coding.playgroundOutput = null; render(); }
 function loadOperatorExample(i){ state.coding.playgroundChallenge=null; setPlaygroundCode(operatorLessons[i].example); runPlayground(); }
@@ -864,6 +1018,7 @@ function renderPlayground(){
       <b>Your turn — ${esc(operatorLessons[activeIdx].category)}:</b> ${esc(ch.prompt)}
       <div style="margin-top:8px;"><button class="btn ghost sm" onclick="toggleSolution()">${state.coding.showSolution?'Hide':'Show'} a solution</button></div>
       ${state.coding.showSolution ? `<pre class="code-block" style="margin-top:8px;">${esc(operatorLessons[activeIdx].solution)}</pre>` : ''}
+      ${renderStepTrainer('try', activeIdx)}
     </div>`;
   }
 
@@ -893,12 +1048,13 @@ function renderPlayground(){
   </div>`;
 }
 
-function renderPrimer(cards){
-  return cards.map(c=>`
+function renderPrimer(cards, stepKind){
+  return cards.map((c,i)=>`
     <div class="card">
       <h3 style="font-size:1rem;">${esc(c.title)}</h3>
       <pre class="code-block">${esc(c.js)}</pre>
       <p style="font-size:.86rem;color:var(--ink-dim);margin:8px 0 0;">${esc(c.note)}</p>
+      ${stepKind ? renderStepTrainer(stepKind, i) : ''}
     </div>`).join('');
 }
 
@@ -929,6 +1085,7 @@ function renderDrill(){
     <h3 style="margin-top:10px;white-space:pre-wrap;">${esc(d.prompt)}</h3>
     ${body}
     <details style="margin-top:12px;"><summary style="cursor:pointer;font-size:.85rem;color:var(--ink-dim);">Hint</summary><p class="hintline">${esc(d.hint)}</p></details>
+    ${renderStepTrainer('drill', d.id)}
   </div>`;
 }
 
@@ -965,6 +1122,7 @@ function renderProblem(){
     ${results ? results.map((r,i)=>`<div class="testcase ${r.pass?'pass':'fail'}"><span>${JSON.stringify(p.tests[i])}</span><span class="badge-status">${r.pass?'✓ pass':(r.error?'error: '+esc(r.error):'✗ got '+JSON.stringify(r.got))}</span></div>`).join('') : ''}
     <details style="margin-top:12px;"><summary style="cursor:pointer;font-size:.85rem;color:var(--ink-dim);">Hints</summary>${p.hints.map(h=>`<p class="hintline">${esc(h)}</p>`).join('')}</details>
     ${p.pyRef ? `<details style="margin-top:12px;"><summary style="cursor:pointer;font-size:.85rem;color:var(--ink-dim);">Python reference (same logic — read-only, not executed here)</summary><pre class="code-block" style="margin-top:8px;">${esc(p.pyRef)}</pre></details>` : ''}
+    ${renderStepTrainer('problem', p.id)}
   </div>`;
 }
 
@@ -1043,7 +1201,7 @@ function answerMcq(id, val){ state.coding.results[id]={chosen:val}; if(val===dri
 function runDrill(id){
   const d = drills.find(x=>x.id===id);
   const code = state.coding.code[id] ?? d.starter;
-  const outs = runUserFn(d.title, code, d.tests);
+  const outs = runUserFn(d.entry || d.title, code, d.tests);
   const results = outs.map((o,i)=>({pass: !o.error && JSON.stringify(o.value)===JSON.stringify(d.expected[i]), got:o.value, error:o.error}));
   state.coding.results[id]=results;
   if(results.every(r=>r.pass)){ state.drillDone[id]=true; localStorage.setItem(LS_DRILLS, JSON.stringify(state.drillDone)); }
