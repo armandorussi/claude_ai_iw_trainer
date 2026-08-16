@@ -700,6 +700,14 @@ function stopSpeaking(){
     const box = document.getElementById('narrateBox');
     const p = codingProblems[state.coding.probIdx];
     if(box && p) state.coding.narrate[p.id] = box.value;
+  } else if(state.speech.targetId==='mockAnswerBox'){
+    const box = document.getElementById('mockAnswerBox');
+    if(box) state.mock.log[state.mock.idx] = box.value;
+  } else if(state.speech.targetId==='mockNarrateBox'){
+    const box = document.getElementById('mockNarrateBox');
+    const items = [...questionBank, ...codingProblems];
+    const item = items[state.mock.idx];
+    if(box && item) state.mock.narrate[item.id] = box.value;
   }
   render();
 }
@@ -1137,14 +1145,29 @@ function viewMock(){
   const isCoding = !!item.entry;
   const mm = String(Math.floor(state.mock.seconds/60)).padStart(2,'0');
   const ss = String(state.mock.seconds%60).padStart(2,'0');
+  const micBtn = (targetId, label)=>{
+    if(!state.speech.supported) return '';
+    const isThisListening = state.speech.listening && state.speech.targetId===targetId;
+    return isThisListening
+      ? `<button class="btn sm" style="background:var(--critical);" onclick="stopSpeaking()">● Stop</button>`
+      : `<button class="btn ghost sm" onclick="startSpeaking('${targetId}')" ${state.speech.listening?'disabled':''}>🎤 ${label}</button>`;
+  };
   let body;
   if(isCoding){
     const code = state.coding.code['mock_'+item.id] ?? item.starter;
+    const narrateVal = state.mock.narrate[item.id] || '';
     body = `<h3>${esc(item.title)}</h3><p style="white-space:pre-wrap;font-size:.9rem;">${esc(item.prompt)}</p>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin:10px 0 6px;">
+      <span style="font-size:.8rem;color:var(--ink-dim);">Narrate your plan while you type:</span>
+      ${micBtn('mockNarrateBox','Narrate aloud')}
+    </div>
+    <textarea id="mockNarrateBox" rows="2" placeholder="e.g. I'll filter for anything not equal to target..." oninput="state.mock.narrate['${item.id}']=this.value">${esc(narrateVal)}</textarea>
+    <div style="font-size:.8rem;color:var(--ink-dim);margin:10px 0 6px;">Code:</div>
     <textarea class="code" rows="7" oninput="editCode('mock_${item.id}', this.value)">${esc(code)}</textarea>`;
   } else {
     body = `<span class="chip cat">${categoryMeta[item.cat]}</span><h3 style="margin-top:8px;">${esc(item.prompt)}</h3>
-    <textarea rows="6" oninput="state.mock.log[${state.mock.idx}]=this.value" placeholder="Answer...">${esc(state.mock.log[state.mock.idx]||'')}</textarea>`;
+    <div style="margin:10px 0;">${micBtn('mockAnswerBox','Speak your answer')}</div>
+    <textarea id="mockAnswerBox" rows="6" oninput="state.mock.log[${state.mock.idx}]=this.value" placeholder="Answer...">${esc(state.mock.log[state.mock.idx]||'')}</textarea>`;
   }
   return `
   <div class="pill-banner"><b>Never ask for clarification.</b> State your read and answer. <b>Never skip coding.</b> Brute force beats silence.</div>
@@ -1222,7 +1245,7 @@ function runProblem(id){
 }
 
 function startMock(){
-  state.mock = {active:true, idx:0, seconds:1800, timerId:null, log:[]};
+  state.mock = {active:true, idx:0, seconds:1800, timerId:null, log:[], narrate:{}};
   state.mock.timerId = setInterval(()=>{
     state.mock.seconds--;
     if(state.mock.seconds<=0){ clearInterval(state.mock.timerId); endMock(false); return; }
@@ -1231,15 +1254,17 @@ function startMock(){
   setView('mock');
 }
 function mockNext(){
+  if(state.speech.listening) stopSpeaking();
   const items = [...questionBank, ...codingProblems];
   if(state.mock.idx >= items.length-1){ endMock(false); return; }
   state.mock.idx++; render();
 }
 function endMock(exited){
+  if(state.speech.listening) stopSpeaking();
   if(state.mock.timerId) clearInterval(state.mock.timerId);
   const elapsedMin = Math.round((1800-state.mock.seconds)/60);
   saveHistoryEntry({date:new Date().toLocaleString(), mode: exited?'Mock (exited early)':'Mock (completed)', summary:`${state.mock.idx+1} items · ${elapsedMin} min`});
-  state.mock = {active:false, idx:0, seconds:1800, timerId:null, log:[]};
+  state.mock = {active:false, idx:0, seconds:1800, timerId:null, log:[], narrate:{}};
   setView('history');
 }
 
